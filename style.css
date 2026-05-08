@@ -1,15 +1,15 @@
 :root {
-    --primary-color: #ff6b35; /* Vibrant orange */
-    --primary-hover: #e85d2b;
-    --secondary-color: #2b2d42; /* Deep blue/dark */
-    --accent-color: #f7c59f;
-    --bg-color: #f4f4f9;
-    --surface-color: #ffffff;
-    --text-color: #333333;
-    --text-light: #666666;
-    --border-color: #e0e0e0;
-    --danger-color: #ef233c;
-    --success-color: #2a9d8f;
+    --primary-color: #c94022; /* Vibrant terracotta/red */
+    --primary-hover: #a63118;
+    --secondary-color: #3b2113; /* Deep brown */
+    --accent-color: #38786a; /* Teal/green */
+    --bg-color: #e6d0ab; /* Kraft paper tan */
+    --surface-color: #f7eedf; /* Creamy light background */
+    --text-color: #3b2113;
+    --text-light: #7a5c4d;
+    --border-color: #c4a981;
+    --danger-color: #c94022;
+    --success-color: #38786a;
     
     --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
     --shadow-md: 0 4px 8px rgba(0,0,0,0.1);
@@ -47,18 +47,37 @@ h1, h2, h3 {
     justify-content: space-between;
     align-items: center;
     box-shadow: var(--shadow-sm);
+    border-bottom: 4px solid var(--primary-color);
     position: sticky;
     top: 0;
     z-index: 100;
 }
 
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#main-logo {
+    height: 75px;
+    width: auto;
+    border-radius: 50%;
+    box-shadow: 0 4px 8px rgba(59, 33, 19, 0.3);
+    border: 3px solid var(--secondary-color);
+    transition: transform 0.3s ease;
+}
+
+#main-logo:hover {
+    transform: scale(1.05) rotate(-5deg);
+}
+
 .logo h1 {
     font-size: 1.8rem;
     font-weight: 800;
-    color: var(--primary-color);
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    color: var(--secondary-color);
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .controls {
