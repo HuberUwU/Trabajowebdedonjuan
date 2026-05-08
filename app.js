@@ -48,7 +48,7 @@ function loadState() {
     if (savedMenu) {
         menu = JSON.parse(savedMenu);
     }
-    
+
     const savedTickets = localStorage.getItem('donjuan_tickets');
     if (savedTickets) {
         tickets = JSON.parse(savedTickets);
@@ -79,7 +79,7 @@ function setupEventListeners() {
     modeToggle.addEventListener('change', (e) => {
         isCerrado = e.target.checked;
         modeLabel.textContent = isCerrado ? 'Turno Cerrado' : 'Turno Abierto';
-        
+
         if (isCerrado) {
             abiertoView.classList.remove('active');
             cerradoView.classList.add('active');
@@ -114,7 +114,7 @@ function setupEventListeners() {
 
     // Tickets List
     viewTicketsBtn.addEventListener('click', openTicketsHistory);
-    
+
     // Print
     printTicketBtn.addEventListener('click', () => {
         window.print();
@@ -136,10 +136,10 @@ function renderClientMenu() {
     menu.forEach(item => {
         const card = document.createElement('div');
         card.className = 'product-card';
-        
+
         const fallbackIcon = getIconForFood(item.name);
-        let imageHTML = item.image ? `<img src="${item.image}" class="product-img" alt="${item.name}">` 
-                                   : `<div class="product-icon">${fallbackIcon}</div>`;
+        let imageHTML = item.image ? `<img src="${item.image}" class="product-img" alt="${item.name}">`
+            : `<div class="product-icon">${fallbackIcon}</div>`;
 
         card.innerHTML = `
             ${imageHTML}
@@ -245,7 +245,7 @@ function processReservation() {
 
     // Generate Ticket Number
     const ticketNumber = tickets.length > 0 ? tickets[tickets.length - 1].number + 1 : 1;
-    
+
     // Calculate total
     let total = 0;
     const itemsList = Object.values(cart).map(item => {
@@ -277,7 +277,7 @@ function showTicketModal(ticket) {
     document.getElementById('ticketNumberDisplay').textContent = ticket.number;
     document.getElementById('ticketCustomerName').textContent = ticket.customer;
     document.getElementById('ticketTotalDisplay').textContent = `$${ticket.total.toFixed(2)}`;
-    
+
     const itemsContainer = document.getElementById('ticketItemsDisplay');
     itemsContainer.innerHTML = '';
     ticket.items.forEach(item => {
@@ -289,6 +289,21 @@ function showTicketModal(ticket) {
         `;
         itemsContainer.appendChild(row);
     });
+
+    // Generar URL con datos para el escaneo QR
+    const baseUrl = window.location.origin + window.location.pathname;
+    const smallTicket = {
+        n: ticket.number,
+        c: ticket.customer,
+        t: ticket.total,
+        i: ticket.items.map(i => [i.qty, i.name, i.total])
+    };
+    // Codificación segura en base64 para caracteres especiales (tildes, eñes)
+    const encodedData = btoa(unescape(encodeURIComponent(JSON.stringify(smallTicket))));
+    const ticketUrl = `${baseUrl}?resumen=${encodedData}`;
+
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(ticketUrl)}`;
+    document.getElementById('ticketQrCode').src = qrUrl;
 
     ticketModal.classList.add('show');
 }
@@ -366,12 +381,12 @@ function openTicketsHistory() {
         reversedTickets.forEach(ticket => {
             const d = new Date(ticket.date);
             const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
-            
+
             const itemEl = document.createElement('div');
             itemEl.className = 'history-item';
-            
+
             let itemsHtml = ticket.items.map(i => `${i.qty}x ${i.name}`).join(', ');
-            
+
             itemEl.innerHTML = `
                 <div class="history-header">
                     <span>Ticket #${ticket.number} - ${ticket.customer}</span>
@@ -384,11 +399,11 @@ function openTicketsHistory() {
             ticketsHistoryContainer.appendChild(itemEl);
         });
     }
-    
+
     ticketsListModal.classList.add('show');
 }
 
-window.reprintTicket = function(ticket) {
+window.reprintTicket = function (ticket) {
     ticketsListModal.classList.remove('show');
     showTicketModal(ticket);
 };
@@ -407,4 +422,41 @@ function getIconForFood(name) {
 }
 
 // Start
-initApp();
+const urlParams = new URLSearchParams(window.location.search);
+const resumenData = urlParams.get('resumen');
+
+if (resumenData) {
+    // Si viene el parámetro resumen, mostrar solo esa vista
+    document.querySelector('.app-header').style.display = 'none';
+    document.getElementById('abiertoView').classList.remove('active');
+    document.getElementById('cerradoView').classList.remove('active');
+    document.querySelector('.app-footer').style.display = 'none';
+
+    const resumenView = document.getElementById('resumenView');
+    resumenView.style.display = 'flex';
+
+    try {
+        // Decodificación segura
+        const ticketData = JSON.parse(decodeURIComponent(escape(atob(resumenData))));
+        document.getElementById('resumenNumber').textContent = ticketData.n;
+        document.getElementById('resumenCustomer').textContent = ticketData.c;
+        document.getElementById('resumenTotal').textContent = `$${ticketData.t.toFixed(2)}`;
+
+        const itemsContainer = document.getElementById('resumenItems');
+        ticketData.i.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'ticket-item-row';
+            row.style.marginBottom = '10px';
+            row.innerHTML = `
+                <span>${item[0]}x ${item[1]}</span>
+                <span style="font-weight: 800;">$${item[2].toFixed(2)}</span>
+            `;
+            itemsContainer.appendChild(row);
+        });
+    } catch (e) {
+        resumenView.innerHTML = "<div style='text-align:center;'><h2>❌ Error</h2><p>No se pudo cargar el resumen del pedido. Es posible que el código sea inválido.</p></div>";
+    }
+} else {
+    // Si no, iniciar la app normal
+    initApp();
+}
