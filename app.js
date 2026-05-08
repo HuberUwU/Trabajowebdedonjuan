@@ -77,6 +77,23 @@ async function fetchInitialData() {
 function setupEventListeners() {
     // Mode Toggle
     modeToggle.addEventListener('change', (e) => {
+        const isTryingToClose = e.target.checked;
+        
+        if (isTryingToClose) {
+            // Pedir confirmación al cerrar turno
+            const confirmClose = confirm('¿Estás seguro de que deseas cerrar el turno? Esto borrará todos los tickets actuales y el contador iniciará en 1 para el próximo turno.');
+            
+            if (!confirmClose) {
+                // Revertir el toggle si cancela
+                e.target.checked = false;
+                return;
+            }
+            
+            // Si confirma, borrar todos los tickets
+            tickets = [];
+            saveState();
+        }
+
         isCerrado = e.target.checked;
         modeLabel.textContent = isCerrado ? 'Turno Cerrado' : 'Turno Abierto';
 
