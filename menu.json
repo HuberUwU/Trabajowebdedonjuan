@@ -1,0 +1,128 @@
+[
+  {
+    "id": 1,
+    "name": "productos",
+    "price": 0.0,
+    "image": ""
+  },
+  {
+    "id": 2,
+    "name": "tortas de bistek",
+    "price": 40.0,
+    "image": ""
+  },
+  {
+    "id": 3,
+    "name": "tortas de chirizo",
+    "price": 40.0,
+    "image": ""
+  },
+  {
+    "id": 4,
+    "name": "tortas de asadera",
+    "price": 40.0,
+    "image": ""
+  },
+  {
+    "id": 5,
+    "name": "tortas de campechana",
+    "price": 40.0,
+    "image": ""
+  },
+  {
+    "id": 6,
+    "name": "mollete de bistek",
+    "price": 20.0,
+    "image": ""
+  },
+  {
+    "id": 7,
+    "name": "mollete de chorizo",
+    "price": 20.0,
+    "image": ""
+  },
+  {
+    "id": 8,
+    "name": "mollete de asadera",
+    "price": 20.0,
+    "image": ""
+  },
+  {
+    "id": 9,
+    "name": "mollete de campechana",
+    "price": 20.0,
+    "image": ""
+  },
+  {
+    "id": 10,
+    "name": "quesadilla",
+    "price": 15.0,
+    "image": ""
+  },
+  {
+    "id": 11,
+    "name": "tacos de bistek",
+    "price": 14.0,
+    "image": ""
+  },
+  {
+    "id": 12,
+    "name": "tacos de chorizo",
+    "price": 14.0,
+    "image": ""
+  },
+  {
+    "id": 13,
+    "name": "tacos de campechana",
+    "price": 14.0,
+    "image": ""
+  },
+  {
+    "id": 14,
+    "name": "tacos de asadera",
+    "price": 14.0,
+    "image": ""
+  },
+  {
+    "id": 15,
+    "name": "pan",
+    "price": 8.0,
+    "image": ""
+  },
+  {
+    "id": 16,
+    "name": "agua bonafon 1lt",
+    "price": 18.0,
+    "image": ""
+  },
+  {
+    "id": 17,
+    "name": "agua bonafon 500ml",
+    "price": 14.0,
+    "image": ""
+  },
+  {
+    "id": 18,
+    "name": "agua ciel 500ml",
+    "price": 15.0,
+    "image": ""
+  },
+  {
+    "id": 19,
+    "name": "agua ciel 1lt",
+    "price": 21.0,
+    "image": ""
+  },
+  {
+    "id": 20,
+    "name": "electrolitro",
+    "price": 26.0,
+    "image": ""
+  },
+  {
+    "id": 21,
+    "name": "agua mineral peñafiel",
+    "price": 24.0,
+    "image": ""
+  }
+]
