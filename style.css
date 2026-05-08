@@ -584,13 +584,14 @@ button {
         flex-direction: column;
         padding: 1rem;
         gap: 1rem;
+        height: auto;
     }
     
     .controls {
         width: 100%;
         justify-content: center;
         flex-wrap: wrap;
-        gap: 1rem;
+        gap: 0.8rem;
     }
     
     .app-main {
@@ -627,16 +628,21 @@ button {
     .logo {
         flex-direction: column;
         text-align: center;
-        gap: 10px;
+        gap: 8px;
     }
     
     #main-logo {
-        height: 60px;
+        height: 70px;
     }
     
     .logo h1 {
-        font-size: 1.4rem;
+        font-size: 1.1rem; /* Smaller font for mobile */
         text-align: center;
+        line-height: 1.2;
+    }
+    
+    .mode-label {
+        font-size: 0.9rem;
     }
 }
 
