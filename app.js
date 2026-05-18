@@ -33,6 +33,20 @@ const viewTicketsBtn = document.getElementById('viewTicketsBtn');
 const closeTicketsListModalBtn = document.getElementById('closeTicketsListModal');
 const ticketsHistoryContainer = document.getElementById('ticketsHistoryContainer');
 
+// Mobile Cart & Options Elements
+const mobileCartBtn = document.getElementById('mobileCartBtn');
+const cartSidebar = document.getElementById('cartSidebar');
+const closeCartMobileBtn = document.getElementById('closeCartMobileBtn');
+const mobileCartTotal = document.getElementById('mobileCartTotal');
+
+const optionsModal = document.getElementById('optionsModal');
+const closeOptionsModalBtn = document.getElementById('closeOptionsModal');
+const confirmOptionsBtn = document.getElementById('confirmOptionsBtn');
+const optionsList = document.getElementById('optionsList');
+const optionsModalProductName = document.getElementById('optionsModalProductName');
+
+let currentProductForOptions = null;
+
 // Initialize Application
 async function initApp() {
     loadState();
@@ -129,6 +143,34 @@ function setupEventListeners() {
     customerNameInput.addEventListener('input', updateReserveButton);
     reserveBtn.addEventListener('click', processReservation);
 
+    // Mobile Cart
+    if (mobileCartBtn && cartSidebar && closeCartMobileBtn) {
+        mobileCartBtn.addEventListener('click', () => cartSidebar.classList.add('show-mobile'));
+        closeCartMobileBtn.addEventListener('click', () => cartSidebar.classList.remove('show-mobile'));
+    }
+
+    // Options Modal
+    closeOptionsModalBtn.addEventListener('click', () => {
+        optionsModal.classList.remove('show');
+        currentProductForOptions = null;
+    });
+    confirmOptionsBtn.addEventListener('click', () => {
+        if (!currentProductForOptions) return;
+        
+        const selects = optionsList.querySelectorAll('.option-select');
+        const options = [];
+        selects.forEach(sel => {
+            const val = sel.value;
+            if (val !== 'Normal') {
+                options.push({ name: sel.dataset.ingredient, value: val });
+            }
+        });
+        
+        addToCartWithOptions(currentProductForOptions, options);
+        optionsModal.classList.remove('show');
+        currentProductForOptions = null;
+    });
+
     // Tickets List
     viewTicketsBtn.addEventListener('click', openTicketsHistory);
 
@@ -188,23 +230,66 @@ function renderAdminMenu() {
 }
 
 // Cart Logic
+function isPreparedFood(name) {
+    const n = name.toLowerCase();
+    return n.includes('mollete') || n.includes('torta') || n.includes('taco') || n.includes('quesadilla') || n.includes('gordita') || n.includes('sincronizada') || n.includes('burrito') || n.includes('huarache') || n.includes('sope');
+}
+
+function generateCartKey(productId, options) {
+    if (!options || options.length === 0) return productId.toString();
+    const optsStr = options.map(o => `${o.name}:${o.value}`).sort().join('|');
+    return `${productId}_${optsStr}`;
+}
+
 function addToCart(productId) {
-    if (cart[productId]) {
-        cart[productId].qty += 1;
+    const product = menu.find(p => p.id === productId);
+    if (!product) return;
+    
+    if (isPreparedFood(product.name)) {
+        currentProductForOptions = product;
+        openOptionsModal(product);
     } else {
-        const product = menu.find(p => p.id === productId);
-        if (product) {
-            cart[productId] = { ...product, qty: 1 };
-        }
+        addToCartWithOptions(product, []);
+    }
+}
+
+function openOptionsModal(product) {
+    optionsModalProductName.textContent = product.name;
+    const ingredients = ['Jitomate', 'Queso Oaxaca', 'Lechuga', 'Crema', 'Salsa'];
+    optionsList.innerHTML = '';
+    
+    ingredients.forEach(ing => {
+        const item = document.createElement('div');
+        item.className = 'option-item';
+        item.innerHTML = `
+            <span>${ing}</span>
+            <select class="option-select" data-ingredient="${ing}">
+                <option value="Sin">Sin</option>
+                <option value="Normal" selected>Normal</option>
+                <option value="Extra">Extra</option>
+            </select>
+        `;
+        optionsList.appendChild(item);
+    });
+    
+    optionsModal.classList.add('show');
+}
+
+function addToCartWithOptions(product, options) {
+    const key = generateCartKey(product.id, options);
+    if (cart[key]) {
+        cart[key].qty += 1;
+    } else {
+        cart[key] = { ...product, options: options, qty: 1, cartKey: key };
     }
     renderCart();
 }
 
-function updateCartQty(productId, delta) {
-    if (cart[productId]) {
-        cart[productId].qty += delta;
-        if (cart[productId].qty <= 0) {
-            delete cart[productId];
+function updateCartQty(key, delta) {
+    if (cart[key]) {
+        cart[key].qty += delta;
+        if (cart[key].qty <= 0) {
+            delete cart[key];
         }
         renderCart();
     }
@@ -212,28 +297,36 @@ function updateCartQty(productId, delta) {
 
 function renderCart() {
     cartItemsContainer.innerHTML = '';
-    const itemIds = Object.keys(cart);
+    const itemKeys = Object.keys(cart);
     let total = 0;
 
-    if (itemIds.length === 0) {
+    if (itemKeys.length === 0) {
         cartItemsContainer.innerHTML = '<div class="empty-cart">No hay productos seleccionados</div>';
+        if (mobileCartTotal) mobileCartTotal.textContent = '$0.00';
     } else {
-        itemIds.forEach(id => {
-            const item = cart[id];
+        itemKeys.forEach(key => {
+            const item = cart[key];
             const itemTotal = item.price * item.qty;
             total += itemTotal;
+
+            let optionsHtml = '';
+            if (item.options && item.options.length > 0) {
+                const optsText = item.options.map(o => `${o.value} ${o.name}`).join(', ');
+                optionsHtml = `<div style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 0.3rem;">${optsText}</div>`;
+            }
 
             const cartItemEl = document.createElement('div');
             cartItemEl.className = 'cart-item';
             cartItemEl.innerHTML = `
                 <div class="cart-item-info">
                     <div class="cart-item-title">${item.name}</div>
+                    ${optionsHtml}
                     <div class="cart-item-price">$${itemTotal.toFixed(2)}</div>
                 </div>
                 <div class="cart-item-controls">
-                    <button class="qty-btn" onclick="updateCartQty(${id}, -1)">-</button>
+                    <button class="qty-btn" onclick="updateCartQty('${key}', -1)">-</button>
                     <span>${item.qty}</span>
-                    <button class="qty-btn" onclick="updateCartQty(${id}, 1)">+</button>
+                    <button class="qty-btn" onclick="updateCartQty('${key}', 1)">+</button>
                 </div>
             `;
             cartItemsContainer.appendChild(cartItemEl);
@@ -241,6 +334,7 @@ function renderCart() {
     }
 
     cartTotalEl.textContent = `$${total.toFixed(2)}`;
+    if (mobileCartTotal) mobileCartTotal.textContent = `$${total.toFixed(2)}`;
     updateReserveButton();
 }
 
@@ -267,8 +361,14 @@ function processReservation() {
     let total = 0;
     const itemsList = Object.values(cart).map(item => {
         total += item.price * item.qty;
+        
+        let optsText = '';
+        if (item.options && item.options.length > 0) {
+            optsText = ' (' + item.options.map(o => `${o.value} ${o.name}`).join(', ') + ')';
+        }
+
         return {
-            name: item.name,
+            name: item.name + optsText,
             qty: item.qty,
             price: item.price,
             total: item.price * item.qty
@@ -288,6 +388,7 @@ function processReservation() {
 
     showTicketModal(newTicket);
     clearCart();
+    if (cartSidebar) cartSidebar.classList.remove('show-mobile');
 }
 
 function showTicketModal(ticket) {
