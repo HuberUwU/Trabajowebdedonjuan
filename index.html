@@ -21,6 +21,7 @@
                 <input type="checkbox" id="modeToggle">
                 <span class="slider round"></span>
             </label>
+            <button id="openDashboardBtn" class="btn-primary" style="background-color: var(--accent-color);">👨‍🍳 Dashboard</button>
             <button id="viewTicketsBtn" class="btn-secondary">🧾 Ver Tickets</button>
         </div>
     </header>
@@ -49,10 +50,42 @@
                         <span>Total:</span>
                         <span id="cartTotal">$0.00</span>
                     </div>
+                    <div style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                        <select id="paymentMethod" class="input-field" required>
+                            <option value="" disabled selected>Método de Pago</option>
+                            <option value="efectivo">Efectivo</option>
+                            <option value="tarjeta">Tarjeta</option>
+                            <option value="transferencia">Transferencia</option>
+                        </select>
+                    </div>
                     <input type="text" id="customerName" placeholder="Nombre del cliente" class="input-field" required>
                     <button id="reserveBtn" class="btn-primary" disabled>Confirmar Reserva</button>
                 </div>
             </aside>
+        </section>
+
+        <!-- VISTA DASHBOARD -->
+        <section id="dashboardView" class="view-section">
+            <div class="dashboard-container" style="width: 100%; background: var(--surface-color); border-radius: var(--radius-lg); padding: 2rem; box-shadow: var(--shadow-md);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+                    <h2>👨‍🍳 Dashboard de Pedidos</h2>
+                    <button id="closeDashboardBtn" class="btn-secondary">Volver al Menú</button>
+                </div>
+                <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                    <!-- Columna Pendientes -->
+                    <div class="dashboard-column">
+                        <h3 style="background-color: orange; color: white; padding: 10px; border-radius: var(--radius-md) var(--radius-md) 0 0; text-align: center; margin: 0;">⏳ Pendientes</h3>
+                        <div id="dashboardPendingList" style="background-color: var(--bg-color); padding: 15px; border-radius: 0 0 var(--radius-md) var(--radius-md); min-height: 400px; display: flex; flex-direction: column; gap: 1rem;">
+                        </div>
+                    </div>
+                    <!-- Columna Aceptados -->
+                    <div class="dashboard-column">
+                        <h3 style="background-color: var(--success-color); color: white; padding: 10px; border-radius: var(--radius-md) var(--radius-md) 0 0; text-align: center; margin: 0;">✅ En Preparación</h3>
+                        <div id="dashboardAcceptedList" style="background-color: var(--bg-color); padding: 15px; border-radius: 0 0 var(--radius-md) var(--radius-md); min-height: 400px; display: flex; flex-direction: column; gap: 1rem;">
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- VISTA CERRADA (Administración) -->
@@ -80,6 +113,9 @@
                 <div class="ticket-body" style="font-size: 1.1rem; line-height: 1.6;">
                     <p><strong>Ticket #:</strong> <span id="resumenNumber"></span></p>
                     <p><strong>Cliente:</strong> <span id="resumenCustomer"></span></p>
+                    <p><strong>Estado:</strong> <span id="resumenStatus" style="font-weight: bold;"></span></p>
+                    <p><strong>Pago:</strong> <span id="resumenPayment"></span></p>
+                    <p id="resumenRejectReasonContainer" style="display: none; color: var(--danger-color);"><strong>Motivo:</strong> <span id="resumenRejectReason"></span></p>
                     <div class="ticket-items" id="resumenItems"
                         style="margin-top: 1.5rem; border-top: 1px solid #ccc; padding-top: 1rem;"></div>
                     <div class="ticket-total" style="font-size: 1.3rem;">
@@ -134,6 +170,9 @@
             </div>
             <div class="ticket-body">
                 <p><strong>Cliente:</strong> <span id="ticketCustomerName"></span></p>
+                <p><strong>Estado:</strong> <span id="ticketStatusDisplay" style="font-weight: bold;"></span></p>
+                <p><strong>Pago:</strong> <span id="ticketPaymentDisplay"></span></p>
+                <p id="ticketRejectReasonContainer" style="display: none; color: var(--danger-color);"><strong>Motivo:</strong> <span id="ticketRejectReasonDisplay"></span></p>
                 <div class="ticket-items" id="ticketItemsDisplay"></div>
                 <div class="ticket-total">
                     <h3>Total: <span id="ticketTotalDisplay"></span></h3>
