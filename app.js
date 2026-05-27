@@ -10,9 +10,17 @@ const modeToggle = document.getElementById('modeToggle');
 const modeLabel = document.getElementById('modeLabel');
 const abiertoView = document.getElementById('abiertoView');
 const cerradoView = document.getElementById('cerradoView');
+const dashboardView = document.getElementById('dashboardView');
 
 const menuGrid = document.getElementById('menuGrid');
 const adminProductsList = document.getElementById('adminProductsList');
+
+const openDashboardBtn = document.getElementById('openDashboardBtn');
+const closeDashboardBtn = document.getElementById('closeDashboardBtn');
+const colEsperando = document.getElementById('colEsperando');
+const colPreparacion = document.getElementById('colPreparacion');
+const colListos = document.getElementById('colListos');
+const colEntregados = document.getElementById('colEntregados');
 
 const cartItemsContainer = document.getElementById('cartItems');
 const cartTotalEl = document.getElementById('cartTotal');
@@ -48,13 +56,16 @@ const optionsModalProductName = document.getElementById('optionsModalProductName
 let currentProductForOptions = null;
 
 // Auth Elements
-const loginView = document.getElementById('loginView');
+const loginModal = document.getElementById('loginModal');
+const closeLoginModalBtn = document.getElementById('closeLoginModal');
+const openLoginBtn = document.getElementById('openLoginBtn');
+const adminControls = document.getElementById('adminControls');
+const logoutBtn = document.getElementById('logoutBtn');
 const appContainer = document.getElementById('appContainer');
 const loginForm = document.getElementById('loginForm');
 const loginUser = document.getElementById('loginUser');
 const loginPassword = document.getElementById('loginPassword');
 const loginError = document.getElementById('loginError');
-const clientLoginBtn = document.getElementById('clientLoginBtn');
 
 // Initialize Application
 async function initApp() {
@@ -129,15 +140,45 @@ function setupEventListeners() {
 
         if (isCerrado) {
             abiertoView.classList.remove('active');
+            if(dashboardView) dashboardView.classList.remove('active');
             cerradoView.classList.add('active');
             renderAdminMenu();
         } else {
             cerradoView.classList.remove('active');
+            if(dashboardView) dashboardView.classList.remove('active');
             abiertoView.classList.add('active');
             renderClientMenu();
             clearCart();
         }
     });
+
+    // Dashboard Toggle
+    if (openDashboardBtn) {
+        openDashboardBtn.addEventListener('click', () => {
+            abiertoView.classList.remove('active');
+            cerradoView.classList.remove('active');
+            dashboardView.classList.add('active');
+            renderDashboard();
+        });
+    }
+
+    if (closeDashboardBtn) {
+        closeDashboardBtn.addEventListener('click', () => {
+            dashboardView.classList.remove('active');
+            if (isCerrado) {
+                cerradoView.classList.add('active');
+            } else {
+                abiertoView.classList.add('active');
+            }
+        });
+    }
+
+    // Auto-refresh dashboard
+    setInterval(() => {
+        if (dashboardView && dashboardView.classList.contains('active')) {
+            renderDashboard();
+        }
+    }, 5000);
 
     // Admin Add Product
     document.getElementById('addNewProductBtn').addEventListener('click', () => {
@@ -160,6 +201,24 @@ function setupEventListeners() {
     reserveBtn.addEventListener('click', processReservation);
 
     // Auth Events
+    if (openLoginBtn) {
+        openLoginBtn.addEventListener('click', () => {
+            if (loginModal) loginModal.classList.add('show');
+        });
+    }
+
+    if (closeLoginModalBtn) {
+        closeLoginModalBtn.addEventListener('click', () => {
+            if (loginModal) loginModal.classList.remove('show');
+        });
+    }
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            logout();
+        });
+    }
+
     if (loginForm) {
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -173,12 +232,6 @@ function setupEventListeners() {
                 loginError.style.display = 'block';
             }
         });
-        
-        if (clientLoginBtn) {
-            clientLoginBtn.addEventListener('click', () => {
-                loginSuccess('client');
-            });
-        }
     }
 
     // Mobile Cart
@@ -220,22 +273,25 @@ function setupEventListeners() {
 
 // Auth Logic
 function loginSuccess(role) {
-    if (loginView) loginView.style.display = 'none';
-    if (appContainer) appContainer.style.display = 'flex';
+    if (loginModal) loginModal.classList.remove('show');
+    if (adminControls) adminControls.style.display = 'flex';
+    if (openLoginBtn) openLoginBtn.style.display = 'none';
+}
+
+function logout() {
+    if (adminControls) adminControls.style.display = 'none';
+    if (openLoginBtn) openLoginBtn.style.display = 'block';
     
-    if (role === 'client') {
-        document.body.classList.add('role-client');
-        // Force open view for clients
-        isCerrado = false;
-        if (modeToggle) modeToggle.checked = false;
-        if (modeLabel) modeLabel.textContent = 'Turno Abierto';
-        if (cerradoView) cerradoView.classList.remove('active');
-        if (abiertoView) abiertoView.classList.add('active');
-        renderClientMenu();
-        clearCart();
-    } else {
-        document.body.classList.remove('role-client');
-    }
+    // Default to client view
+    isCerrado = false;
+    if (modeToggle) modeToggle.checked = false;
+    if (modeLabel) modeLabel.textContent = 'Turno Abierto';
+    if (cerradoView) cerradoView.classList.remove('active');
+    if (abiertoView) abiertoView.classList.add('active');
+    renderClientMenu();
+    clearCart();
+    
+    if (loginForm) loginForm.reset();
 }
 
 // Rendering UI
@@ -438,7 +494,8 @@ function processReservation() {
         customer: customerName,
         items: itemsList,
         total: total,
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
+        status: 'esperando'
     };
 
     tickets.push(newTicket);
@@ -453,6 +510,28 @@ function showTicketModal(ticket) {
     document.getElementById('ticketNumberDisplay').textContent = ticket.number;
     document.getElementById('ticketCustomerName').textContent = ticket.customer;
     document.getElementById('ticketTotalDisplay').textContent = `$${ticket.total.toFixed(2)}`;
+
+    let statusText = 'Esperando Confirmación';
+    let statusColor = '#d94f04';
+    if (ticket.status === 'preparacion' || ticket.status === 'pendiente') {
+        statusText = 'En Preparación';
+        statusColor = 'orange';
+    } else if (ticket.status === 'listo') {
+        statusText = 'Listo para Entregar';
+        statusColor = 'var(--accent-color)';
+    } else if (ticket.status === 'entregado') {
+        statusText = 'Entregado';
+        statusColor = 'var(--success-color)';
+    } else if (ticket.status === 'rechazado') {
+        statusText = 'Rechazado';
+        statusColor = 'var(--danger-color)';
+    }
+
+    const statusDisplay = document.getElementById('ticketStatusDisplay');
+    if (statusDisplay) {
+        statusDisplay.textContent = statusText;
+        statusDisplay.style.color = statusColor;
+    }
 
     const itemsContainer = document.getElementById('ticketItemsDisplay');
     itemsContainer.innerHTML = '';
@@ -563,12 +642,29 @@ function openTicketsHistory() {
 
             let itemsHtml = ticket.items.map(i => `${i.qty}x ${i.name}`).join(', ');
 
+            let statusText = 'Esperando Confirmación';
+            let statusColor = '#d94f04';
+            if (ticket.status === 'preparacion' || ticket.status === 'pendiente') {
+                statusText = 'En Preparación';
+                statusColor = 'orange';
+            } else if (ticket.status === 'listo') {
+                statusText = 'Listo para Entregar';
+                statusColor = 'var(--accent-color)';
+            } else if (ticket.status === 'entregado') {
+                statusText = 'Entregado';
+                statusColor = 'var(--success-color)';
+            } else if (ticket.status === 'rechazado') {
+                statusText = 'Rechazado';
+                statusColor = 'var(--danger-color)';
+            }
+
             itemEl.innerHTML = `
                 <div class="history-header">
                     <span>Ticket #${ticket.number} - ${ticket.customer}</span>
                     <span style="color:var(--primary-color)">$${ticket.total.toFixed(2)}</span>
                 </div>
                 <div style="font-size:0.9rem; color:var(--text-light); margin-bottom:0.5rem;">${dateStr}</div>
+                <div style="font-size:0.9rem; margin-bottom:0.5rem;"><strong>Estado:</strong> <span style="color:${statusColor}; font-weight:bold;">${statusText}</span></div>
                 <div style="font-size:0.9rem;"><strong>Pedido:</strong> ${itemsHtml}</div>
                 <button class="btn-secondary mt-4" style="padding:0.3rem 0.8rem; font-size:0.8rem;" onclick='reprintTicket(${JSON.stringify(ticket)})'>Reimprimir</button>
             `;
@@ -583,6 +679,87 @@ window.reprintTicket = function (ticket) {
     ticketsListModal.classList.remove('show');
     showTicketModal(ticket);
 };
+
+// Dashboard Logic
+window.updateTicketStatus = function(number, status) {
+    const idx = tickets.findIndex(t => t.number === number);
+    if (idx > -1) {
+        tickets[idx].status = status;
+        saveState();
+        renderDashboard();
+        if (document.getElementById('ticketsListModal').classList.contains('show')) openTicketsHistory();
+    }
+}
+
+function renderDashboard() {
+    if (!colEsperando || !colPreparacion || !colListos || !colEntregados) return;
+    
+    colEsperando.innerHTML = '';
+    colPreparacion.innerHTML = '';
+    colListos.innerHTML = '';
+    colEntregados.innerHTML = '';
+
+    const waiting = tickets.filter(t => t.status === 'esperando' || !t.status);
+    const preparing = tickets.filter(t => t.status === 'preparacion' || t.status === 'pendiente');
+    const ready = tickets.filter(t => t.status === 'listo');
+    const delivered = tickets.filter(t => t.status === 'entregado');
+
+    if (waiting.length === 0) colEsperando.innerHTML = '<p style="text-align:center; color:gray;">No hay pedidos en espera.</p>';
+    else waiting.forEach(t => colEsperando.appendChild(createDashboardCard(t)));
+
+    if (preparing.length === 0) colPreparacion.innerHTML = '<p style="text-align:center; color:gray;">No hay pedidos en preparación.</p>';
+    else preparing.forEach(t => colPreparacion.appendChild(createDashboardCard(t)));
+
+    if (ready.length === 0) colListos.innerHTML = '<p style="text-align:center; color:gray;">No hay pedidos listos.</p>';
+    else ready.forEach(t => colListos.appendChild(createDashboardCard(t)));
+
+    if (delivered.length === 0) colEntregados.innerHTML = '<p style="text-align:center; color:gray;">No hay pedidos entregados.</p>';
+    else delivered.forEach(t => colEntregados.appendChild(createDashboardCard(t)));
+}
+
+function createDashboardCard(ticket) {
+    const card = document.createElement('div');
+    card.style.cssText = 'background: white; border-radius: var(--radius-md); padding: 1rem; box-shadow: var(--shadow-sm);';
+    
+    if (ticket.status === 'esperando' || !ticket.status) card.style.borderLeft = '5px solid #d94f04';
+    else if (ticket.status === 'preparacion' || ticket.status === 'pendiente') card.style.borderLeft = '5px solid orange';
+    else if (ticket.status === 'listo') card.style.borderLeft = '5px solid var(--accent-color)';
+    else if (ticket.status === 'entregado') card.style.borderLeft = '5px solid var(--success-color)';
+
+    const d = new Date(ticket.date);
+    const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    let itemsHtml = ticket.items.map(i => `<div style="margin-bottom:4px;"><strong>${i.qty}x</strong> ${i.name}</div>`).join('');
+
+    let actionBtns = '';
+    if (ticket.status === 'esperando' || !ticket.status) {
+        actionBtns = `
+            <div style="display:flex; gap:10px; margin-top:1rem;">
+                <button class="btn-primary w-100" style="background-color: orange; padding:0.5rem; font-size:0.9rem;" onclick="updateTicketStatus(${ticket.number}, 'preparacion')">✅ Aceptar</button>
+                <button class="btn-danger w-100" style="padding:0.5rem; font-size:0.9rem;" onclick="updateTicketStatus(${ticket.number}, 'rechazado')">❌ Rechazar</button>
+            </div>
+        `;
+    } else if (ticket.status === 'preparacion' || ticket.status === 'pendiente') {
+        actionBtns = `<button class="btn-primary w-100" style="background-color: var(--accent-color); padding:0.5rem; margin-top:1rem; font-size:0.9rem;" onclick="updateTicketStatus(${ticket.number}, 'listo')">Marcar Listo</button>`;
+    } else if (ticket.status === 'listo') {
+        actionBtns = `<button class="btn-primary w-100" style="background-color: var(--success-color); padding:0.5rem; margin-top:1rem; font-size:0.9rem;" onclick="updateTicketStatus(${ticket.number}, 'entregado')">Marcar Entregado</button>`;
+    }
+
+    card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem; border-bottom:1px dashed #ccc; padding-bottom:0.5rem;">
+            <h4 style="margin:0; color: var(--secondary-color);">#${ticket.number} - ${ticket.customer}</h4>
+            <span style="color:var(--text-light); font-size:0.9rem;">${timeStr}</span>
+        </div>
+        <div style="font-size:0.95rem; margin-bottom:0.8rem; color: var(--text-color);">
+            ${itemsHtml}
+        </div>
+        <div style="font-size:0.85rem; color:var(--text-light); text-align:right;">
+            <span style="font-weight:bold; color:var(--primary-color); font-size:1.1rem;">$${ticket.total.toFixed(2)}</span>
+        </div>
+        ${actionBtns}
+    `;
+    return card;
+}
 
 // Helper
 function getIconForFood(name) {
@@ -603,8 +780,6 @@ const resumenData = urlParams.get('resumen');
 
 if (resumenData) {
     // Si viene el parámetro resumen, mostrar solo esa vista
-    if (loginView) loginView.style.display = 'none';
-    if (appContainer) appContainer.style.display = 'flex';
     document.querySelector('.app-header').style.display = 'none';
     document.getElementById('abiertoView').classList.remove('active');
     document.getElementById('cerradoView').classList.remove('active');
@@ -619,6 +794,41 @@ if (resumenData) {
         document.getElementById('resumenNumber').textContent = ticketData.n;
         document.getElementById('resumenCustomer').textContent = ticketData.c;
         document.getElementById('resumenTotal').textContent = `$${ticketData.t.toFixed(2)}`;
+
+        function updateResumenStatus() {
+            let currentStatus = 'esperando';
+            const savedTickets = localStorage.getItem('donjuan_tickets');
+            if (savedTickets) {
+                const localTickets = JSON.parse(savedTickets);
+                const found = localTickets.find(t => t.number === ticketData.n);
+                if (found && found.status) currentStatus = found.status;
+            }
+
+            let statusText = 'Esperando Confirmación';
+            let statusColor = '#d94f04';
+            if (currentStatus === 'preparacion' || currentStatus === 'pendiente') {
+                statusText = 'En Preparación';
+                statusColor = 'orange';
+            } else if (currentStatus === 'listo') {
+                statusText = 'Listo para Entregar';
+                statusColor = 'var(--accent-color)';
+            } else if (currentStatus === 'entregado') {
+                statusText = 'Entregado';
+                statusColor = 'var(--success-color)';
+            } else if (currentStatus === 'rechazado') {
+                statusText = 'Rechazado';
+                statusColor = 'var(--danger-color)';
+            }
+
+            const resumenStatus = document.getElementById('resumenStatus');
+            if (resumenStatus) {
+                resumenStatus.textContent = statusText;
+                resumenStatus.style.color = statusColor;
+            }
+        }
+        
+        updateResumenStatus();
+        setInterval(updateResumenStatus, 3000);
 
         const itemsContainer = document.getElementById('resumenItems');
         ticketData.i.forEach(item => {
