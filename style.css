@@ -34,6 +34,73 @@ body {
     min-height: 100vh;
 }
 
+/* Login View */
+.login-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 2rem;
+}
+
+.login-container {
+    background: var(--surface-color);
+    padding: 3rem 2rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.login-logo {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 3px solid var(--secondary-color);
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-md);
+}
+
+.login-container h2 {
+    margin-bottom: 2rem;
+}
+
+.login-container .form-group {
+    text-align: left;
+    margin-bottom: 1.2rem;
+}
+
+.login-divider {
+    margin: 1.5rem 0;
+    position: relative;
+    text-align: center;
+}
+
+.login-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    border-top: 1px solid var(--border-color);
+    z-index: 1;
+}
+
+.login-divider span {
+    background-color: var(--surface-color);
+    padding: 0 10px;
+    color: var(--text-light);
+    font-size: 0.9rem;
+    position: relative;
+    z-index: 2;
+}
+
+/* Hide header controls for clients */
+body.role-client .controls {
+    display: none !important;
+}
+
 /* Typography */
 h1, h2, h3 {
     color: var(--secondary-color);

@@ -10,13 +10,8 @@ const modeToggle = document.getElementById('modeToggle');
 const modeLabel = document.getElementById('modeLabel');
 const abiertoView = document.getElementById('abiertoView');
 const cerradoView = document.getElementById('cerradoView');
-const dashboardView = document.getElementById('dashboardView');
 
 const menuGrid = document.getElementById('menuGrid');
-const openDashboardBtn = document.getElementById('openDashboardBtn');
-const closeDashboardBtn = document.getElementById('closeDashboardBtn');
-const dashboardPendingList = document.getElementById('dashboardPendingList');
-const dashboardAcceptedList = document.getElementById('dashboardAcceptedList');
 const adminProductsList = document.getElementById('adminProductsList');
 
 const cartItemsContainer = document.getElementById('cartItems');
@@ -51,6 +46,15 @@ const optionsList = document.getElementById('optionsList');
 const optionsModalProductName = document.getElementById('optionsModalProductName');
 
 let currentProductForOptions = null;
+
+// Auth Elements
+const loginView = document.getElementById('loginView');
+const appContainer = document.getElementById('appContainer');
+const loginForm = document.getElementById('loginForm');
+const loginUser = document.getElementById('loginUser');
+const loginPassword = document.getElementById('loginPassword');
+const loginError = document.getElementById('loginError');
+const clientLoginBtn = document.getElementById('clientLoginBtn');
 
 // Initialize Application
 async function initApp() {
@@ -94,39 +98,18 @@ async function fetchInitialData() {
 }
 
 function setupEventListeners() {
-    // Dashboard Toggle
-    if (openDashboardBtn) {
-        openDashboardBtn.addEventListener('click', () => {
-            abiertoView.classList.remove('active');
-            cerradoView.classList.remove('active');
-            dashboardView.classList.add('active');
-            renderDashboard();
-        });
-    }
-
-    if (closeDashboardBtn) {
-        closeDashboardBtn.addEventListener('click', () => {
-            dashboardView.classList.remove('active');
-            if (isCerrado) {
-                cerradoView.classList.add('active');
-            } else {
-                abiertoView.classList.add('active');
-            }
-        });
-    }
-
-    // Auto-refresh dashboard
-    setInterval(() => {
-        if (dashboardView && dashboardView.classList.contains('active')) {
-            renderDashboard();
-        }
-    }, 5000);
-
     // Mode Toggle
     modeToggle.addEventListener('change', (e) => {
         const isTryingToClose = e.target.checked;
         
         if (isTryingToClose) {
+            const pwd = prompt('Ingrese la contraseña de administrador para cerrar turno:');
+            if (pwd !== '12345') {
+                alert('Contraseña incorrecta.');
+                e.target.checked = false;
+                return;
+            }
+
             // Pedir confirmación al cerrar turno
             const confirmClose = confirm('¿Estás seguro de que deseas cerrar el turno? Esto borrará todos los tickets actuales y el contador iniciará en 1 para el próximo turno.');
             
@@ -174,8 +157,29 @@ function setupEventListeners() {
 
     // Cart Events
     customerNameInput.addEventListener('input', updateReserveButton);
-    document.getElementById('paymentMethod').addEventListener('change', updateReserveButton);
     reserveBtn.addEventListener('click', processReservation);
+
+    // Auth Events
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const user = loginUser.value.trim();
+            const pass = loginPassword.value.trim();
+            
+            if (user.toLowerCase() === 'admin' && pass === '12345') {
+                loginError.style.display = 'none';
+                loginSuccess('admin');
+            } else {
+                loginError.style.display = 'block';
+            }
+        });
+        
+        if (clientLoginBtn) {
+            clientLoginBtn.addEventListener('click', () => {
+                loginSuccess('client');
+            });
+        }
+    }
 
     // Mobile Cart
     if (mobileCartBtn && cartSidebar && closeCartMobileBtn) {
@@ -212,6 +216,26 @@ function setupEventListeners() {
     printTicketBtn.addEventListener('click', () => {
         window.print();
     });
+}
+
+// Auth Logic
+function loginSuccess(role) {
+    if (loginView) loginView.style.display = 'none';
+    if (appContainer) appContainer.style.display = 'flex';
+    
+    if (role === 'client') {
+        document.body.classList.add('role-client');
+        // Force open view for clients
+        isCerrado = false;
+        if (modeToggle) modeToggle.checked = false;
+        if (modeLabel) modeLabel.textContent = 'Turno Abierto';
+        if (cerradoView) cerradoView.classList.remove('active');
+        if (abiertoView) abiertoView.classList.add('active');
+        renderClientMenu();
+        clearCart();
+    } else {
+        document.body.classList.remove('role-client');
+    }
 }
 
 // Rendering UI
@@ -381,14 +405,12 @@ function clearCart() {
 function updateReserveButton() {
     const hasItems = Object.keys(cart).length > 0;
     const hasName = customerNameInput.value.trim().length > 0;
-    const hasPayment = document.getElementById('paymentMethod').value !== "";
-    reserveBtn.disabled = !(hasItems && hasName && hasPayment);
+    reserveBtn.disabled = !(hasItems && hasName);
 }
 
 function processReservation() {
     const customerName = customerNameInput.value.trim();
-    const paymentMethod = document.getElementById('paymentMethod').value;
-    if (!customerName || Object.keys(cart).length === 0 || !paymentMethod) return;
+    if (!customerName || Object.keys(cart).length === 0) return;
 
     // Generate Ticket Number
     const ticketNumber = tickets.length > 0 ? tickets[tickets.length - 1].number + 1 : 1;
@@ -416,17 +438,13 @@ function processReservation() {
         customer: customerName,
         items: itemsList,
         total: total,
-        date: new Date().toISOString(),
-        status: 'pending',
-        paymentMethod: paymentMethod,
-        rejectReason: ''
+        date: new Date().toISOString()
     };
 
     tickets.push(newTicket);
     saveState();
 
     showTicketModal(newTicket);
-    document.getElementById('paymentMethod').value = "";
     clearCart();
     if (cartSidebar) cartSidebar.classList.remove('show-mobile');
 }
@@ -435,20 +453,6 @@ function showTicketModal(ticket) {
     document.getElementById('ticketNumberDisplay').textContent = ticket.number;
     document.getElementById('ticketCustomerName').textContent = ticket.customer;
     document.getElementById('ticketTotalDisplay').textContent = `$${ticket.total.toFixed(2)}`;
-
-    const statusEl = document.getElementById('ticketStatusDisplay');
-    statusEl.textContent = ticket.status === 'pending' ? 'Pendiente' : (ticket.status === 'accepted' ? 'Aceptado' : 'Rechazado');
-    statusEl.style.color = ticket.status === 'pending' ? 'orange' : (ticket.status === 'accepted' ? 'green' : 'red');
-    
-    document.getElementById('ticketPaymentDisplay').textContent = ticket.paymentMethod ? ticket.paymentMethod.charAt(0).toUpperCase() + ticket.paymentMethod.slice(1) : 'No especificado';
-    
-    const reasonContainer = document.getElementById('ticketRejectReasonContainer');
-    if (ticket.status === 'rejected' && ticket.rejectReason) {
-        reasonContainer.style.display = 'block';
-        document.getElementById('ticketRejectReasonDisplay').textContent = ticket.rejectReason;
-    } else {
-        reasonContainer.style.display = 'none';
-    }
 
     const itemsContainer = document.getElementById('ticketItemsDisplay');
     itemsContainer.innerHTML = '';
@@ -468,7 +472,6 @@ function showTicketModal(ticket) {
         n: ticket.number,
         c: ticket.customer,
         t: ticket.total,
-        p: ticket.paymentMethod,
         i: ticket.items.map(i => [i.qty, i.name, i.total])
     };
     // Codificación segura en base64 para caracteres especiales (tildes, eñes)
@@ -479,21 +482,6 @@ function showTicketModal(ticket) {
     document.getElementById('ticketQrCode').src = qrUrl;
 
     ticketModal.classList.add('show');
-
-    if (window.ticketUpdateInterval) clearInterval(window.ticketUpdateInterval);
-    window.ticketUpdateInterval = setInterval(() => {
-        if (!ticketModal.classList.contains('show')) {
-            clearInterval(window.ticketUpdateInterval);
-            return;
-        }
-        const latestTickets = JSON.parse(localStorage.getItem('donjuan_tickets') || '[]');
-        const latest = latestTickets.find(t => t.number === ticket.number);
-        if (latest && (latest.status !== ticket.status || latest.rejectReason !== ticket.rejectReason)) {
-            ticket.status = latest.status;
-            ticket.rejectReason = latest.rejectReason;
-            showTicketModal(ticket);
-        }
-    }, 2000);
 }
 
 // Admin Logic
@@ -575,44 +563,14 @@ function openTicketsHistory() {
 
             let itemsHtml = ticket.items.map(i => `${i.qty}x ${i.name}`).join(', ');
 
-            let statusText = '';
-            let statusColor = '';
-            if (ticket.status === 'pending') {
-                statusText = 'Pendiente';
-                statusColor = 'orange';
-            } else if (ticket.status === 'accepted') {
-                statusText = 'Aceptado';
-                statusColor = 'green';
-            } else if (ticket.status === 'rejected') {
-                statusText = 'Rechazado';
-                statusColor = 'red';
-            } else {
-                statusText = 'Completado';
-                statusColor = 'gray';
-            }
-
-            let actionBtns = '';
-            if (ticket.status === 'pending' || !ticket.status) {
-                actionBtns = `
-                    <div style="margin-top: 10px; display: flex; gap: 10px;">
-                        <button class="btn-primary" style="background-color: var(--success-color);" onclick='acceptTicket(${ticket.number})'>Aceptar</button>
-                        <button class="btn-danger" onclick='rejectTicket(${ticket.number})'>Rechazar</button>
-                    </div>
-                `;
-            }
-
             itemEl.innerHTML = `
                 <div class="history-header">
                     <span>Ticket #${ticket.number} - ${ticket.customer}</span>
                     <span style="color:var(--primary-color)">$${ticket.total.toFixed(2)}</span>
                 </div>
                 <div style="font-size:0.9rem; color:var(--text-light); margin-bottom:0.5rem;">${dateStr}</div>
-                <div style="font-size:0.9rem; margin-bottom:0.5rem;"><strong>Estado:</strong> <span style="color:${statusColor}; font-weight:bold;">${statusText}</span></div>
-                <div style="font-size:0.9rem; margin-bottom:0.5rem;"><strong>Pago:</strong> ${ticket.paymentMethod ? ticket.paymentMethod.charAt(0).toUpperCase() + ticket.paymentMethod.slice(1) : 'No especificado'}</div>
                 <div style="font-size:0.9rem;"><strong>Pedido:</strong> ${itemsHtml}</div>
-                ${ticket.status === 'rejected' && ticket.rejectReason ? `<div style="font-size:0.9rem; color:red; margin-top:0.5rem;"><strong>Motivo de rechazo:</strong> ${ticket.rejectReason}</div>` : ''}
-                ${actionBtns}
-                <button class="btn-secondary mt-4" style="padding:0.3rem 0.8rem; font-size:0.8rem;" onclick='reprintTicket(${JSON.stringify(ticket)})'>Ver / Reimprimir</button>
+                <button class="btn-secondary mt-4" style="padding:0.3rem 0.8rem; font-size:0.8rem;" onclick='reprintTicket(${JSON.stringify(ticket)})'>Reimprimir</button>
             `;
             ticketsHistoryContainer.appendChild(itemEl);
         });
@@ -625,108 +583,6 @@ window.reprintTicket = function (ticket) {
     ticketsListModal.classList.remove('show');
     showTicketModal(ticket);
 };
-
-window.acceptTicket = function(number) {
-    const ticketIndex = tickets.findIndex(t => t.number === number);
-    if (ticketIndex > -1) {
-        tickets[ticketIndex].status = 'accepted';
-        saveState();
-        if (document.getElementById('ticketsListModal').classList.contains('show')) openTicketsHistory();
-        if (dashboardView && dashboardView.classList.contains('active')) renderDashboard();
-    }
-};
-
-window.rejectTicket = function(number) {
-    const reason = prompt('Motivo de rechazo:');
-    if (reason === null) return;
-    
-    const ticketIndex = tickets.findIndex(t => t.number === number);
-    if (ticketIndex > -1) {
-        tickets[ticketIndex].status = 'rejected';
-        tickets[ticketIndex].rejectReason = reason || 'Sin motivo especificado';
-        saveState();
-        if (document.getElementById('ticketsListModal').classList.contains('show')) openTicketsHistory();
-        if (dashboardView && dashboardView.classList.contains('active')) renderDashboard();
-    }
-};
-
-window.completeTicket = function(number) {
-    const ticketIndex = tickets.findIndex(t => t.number === number);
-    if (ticketIndex > -1) {
-        tickets[ticketIndex].status = 'completed';
-        saveState();
-        if (document.getElementById('ticketsListModal').classList.contains('show')) openTicketsHistory();
-        if (dashboardView && dashboardView.classList.contains('active')) renderDashboard();
-    }
-};
-
-function renderDashboard() {
-    if (!dashboardPendingList || !dashboardAcceptedList) return;
-    dashboardPendingList.innerHTML = '';
-    dashboardAcceptedList.innerHTML = '';
-    
-    const pendingTickets = tickets.filter(t => t.status === 'pending');
-    const acceptedTickets = tickets.filter(t => t.status === 'accepted');
-
-    if (pendingTickets.length === 0) {
-        dashboardPendingList.innerHTML = '<p style="text-align:center; color:gray; margin-top:2rem;">No hay pedidos pendientes.</p>';
-    } else {
-        pendingTickets.forEach(ticket => {
-            dashboardPendingList.appendChild(createDashboardCard(ticket));
-        });
-    }
-
-    if (acceptedTickets.length === 0) {
-        dashboardAcceptedList.innerHTML = '<p style="text-align:center; color:gray; margin-top:2rem;">No hay pedidos en preparación.</p>';
-    } else {
-        acceptedTickets.forEach(ticket => {
-            dashboardAcceptedList.appendChild(createDashboardCard(ticket));
-        });
-    }
-}
-
-function createDashboardCard(ticket) {
-    const card = document.createElement('div');
-    card.className = 'dashboard-card';
-    card.style.cssText = 'background: white; border-radius: var(--radius-md); padding: 1rem; box-shadow: var(--shadow-sm); border-left: 5px solid ' + (ticket.status === 'pending' ? 'orange' : 'var(--success-color)');
-    
-    const d = new Date(ticket.date);
-    const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    let itemsHtml = ticket.items.map(i => `<div style="margin-bottom:4px;"><strong>${i.qty}x</strong> ${i.name}</div>`).join('');
-    
-    let actionBtns = '';
-    if (ticket.status === 'pending') {
-        actionBtns = `
-            <div style="display:flex; gap:10px; margin-top:1rem;">
-                <button class="btn-primary w-100" style="background-color: var(--success-color); padding:0.5rem;" onclick="acceptTicket(${ticket.number})">Aceptar</button>
-                <button class="btn-danger w-100" style="padding:0.5rem;" onclick="rejectTicket(${ticket.number})">Rechazar</button>
-            </div>
-        `;
-    } else if (ticket.status === 'accepted') {
-        actionBtns = `
-            <div style="display:flex; gap:10px; margin-top:1rem;">
-                <button class="btn-primary w-100" style="background-color: gray; padding:0.5rem;" onclick="completeTicket(${ticket.number})">Marcar Listo</button>
-            </div>
-        `;
-    }
-
-    card.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem; border-bottom:1px dashed #ccc; padding-bottom:0.5rem;">
-            <h4 style="margin:0; color: var(--secondary-color);">#${ticket.number} - ${ticket.customer}</h4>
-            <span style="color:var(--text-light); font-size:0.9rem;">${timeStr}</span>
-        </div>
-        <div style="font-size:0.95rem; margin-bottom:0.8rem; color: var(--text-color);">
-            ${itemsHtml}
-        </div>
-        <div style="font-size:0.85rem; color:var(--text-light); display:flex; justify-content:space-between; align-items:center;">
-            <span>💳 ${ticket.paymentMethod ? ticket.paymentMethod.charAt(0).toUpperCase() + ticket.paymentMethod.slice(1) : ''}</span>
-            <span style="font-weight:bold; color:var(--primary-color); font-size:1.1rem;">$${ticket.total.toFixed(2)}</span>
-        </div>
-        ${actionBtns}
-    `;
-    return card;
-}
 
 // Helper
 function getIconForFood(name) {
@@ -747,6 +603,8 @@ const resumenData = urlParams.get('resumen');
 
 if (resumenData) {
     // Si viene el parámetro resumen, mostrar solo esa vista
+    if (loginView) loginView.style.display = 'none';
+    if (appContainer) appContainer.style.display = 'flex';
     document.querySelector('.app-header').style.display = 'none';
     document.getElementById('abiertoView').classList.remove('active');
     document.getElementById('cerradoView').classList.remove('active');
@@ -758,32 +616,9 @@ if (resumenData) {
     try {
         // Decodificación segura
         const ticketData = JSON.parse(decodeURIComponent(escape(atob(resumenData))));
-        
-        // Cargar estado más reciente si estamos en el mismo dispositivo
-        const latestTickets = JSON.parse(localStorage.getItem('donjuan_tickets') || '[]');
-        const latest = latestTickets.find(t => t.number === ticketData.n);
-        
-        const status = latest ? latest.status : 'pending';
-        const payment = latest ? latest.paymentMethod : (ticketData.p || 'No especificado');
-        const rejectReason = latest ? latest.rejectReason : '';
-
         document.getElementById('resumenNumber').textContent = ticketData.n;
         document.getElementById('resumenCustomer').textContent = ticketData.c;
         document.getElementById('resumenTotal').textContent = `$${ticketData.t.toFixed(2)}`;
-
-        const statusEl = document.getElementById('resumenStatus');
-        statusEl.textContent = status === 'pending' ? 'Pendiente' : (status === 'accepted' ? 'Aceptado' : 'Rechazado');
-        statusEl.style.color = status === 'pending' ? 'orange' : (status === 'accepted' ? 'green' : 'red');
-        
-        document.getElementById('resumenPayment').textContent = payment.charAt(0).toUpperCase() + payment.slice(1);
-        
-        const reasonContainer = document.getElementById('resumenRejectReasonContainer');
-        if (status === 'rejected' && rejectReason) {
-            reasonContainer.style.display = 'block';
-            document.getElementById('resumenRejectReason').textContent = rejectReason;
-        } else {
-            reasonContainer.style.display = 'none';
-        }
 
         const itemsContainer = document.getElementById('resumenItems');
         ticketData.i.forEach(item => {
@@ -796,24 +631,6 @@ if (resumenData) {
             `;
             itemsContainer.appendChild(row);
         });
-
-        // Auto update para vista QR
-        setInterval(() => {
-            const currentTickets = JSON.parse(localStorage.getItem('donjuan_tickets') || '[]');
-            const current = currentTickets.find(t => t.number === ticketData.n);
-            if (current) {
-                const currentStatus = current.status || 'pending';
-                statusEl.textContent = currentStatus === 'pending' ? 'Pendiente' : (currentStatus === 'accepted' ? 'Aceptado' : 'Rechazado');
-                statusEl.style.color = currentStatus === 'pending' ? 'orange' : (currentStatus === 'accepted' ? 'green' : 'red');
-                
-                if (currentStatus === 'rejected' && current.rejectReason) {
-                    reasonContainer.style.display = 'block';
-                    document.getElementById('resumenRejectReason').textContent = current.rejectReason;
-                } else {
-                    reasonContainer.style.display = 'none';
-                }
-            }
-        }, 3000);
     } catch (e) {
         resumenView.innerHTML = "<div style='text-align:center;'><h2>❌ Error</h2><p>No se pudo cargar el resumen del pedido. Es posible que el código sea inválido.</p></div>";
     }
