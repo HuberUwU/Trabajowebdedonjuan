@@ -7,14 +7,13 @@ let editingProductId = null;
 
 // Firebase Integration Config & State
 const firebaseConfig = {
-  apiKey: "AIzaSyBHTh1VTHG_On49AOoKyp3ervp8SgXhoVM",
-  authDomain: "donjuan-121d0.firebaseapp.com",
-  projectId: "donjuan-121d0",
-  storageBucket: "donjuan-121d0.firebasestorage.app",
-  messagingSenderId: "517816845917",
-  appId: "1:517816845917:web:8be0952624dd4e6c04afb4",
-  measurementId: "G-B3W54VN4KL",
-  databaseURL: "https://donjuan-121d0-default-rtdb.firebaseio.com"
+    apiKey: "AIzaSyBHTh1VTHG_On49AOoKyp3ervp8SgXhoVM",
+    authDomain: "donjuan-121d0.firebaseapp.com",
+    projectId: "donjuan-121d0",
+    storageBucket: "donjuan-121d0.firebasestorage.app",
+    messagingSenderId: "517816845917",
+    appId: "1:517816845917:web:8be0952624dd4e6c04afb4",
+    measurementId: "G-B3W54VN4KL"
 };
 
 let db = null;
@@ -91,7 +90,7 @@ function syncTickets() {
             list.sort((a, b) => a.number - b.number);
             tickets = list;
             localStorage.setItem('donjuan_tickets', JSON.stringify(tickets));
-            
+
             if (dashboardView && dashboardView.classList.contains('active')) {
                 renderDashboard();
             }
@@ -229,7 +228,7 @@ function setupEventListeners() {
     // Mode Toggle
     modeToggle.addEventListener('change', (e) => {
         const isTryingToClose = e.target.checked;
-        
+
         if (isTryingToClose) {
             const pwd = prompt('Ingrese la contraseña de administrador para cerrar turno:');
             if (pwd !== '12345') {
@@ -240,13 +239,13 @@ function setupEventListeners() {
 
             // Pedir confirmación al cerrar turno
             const confirmClose = confirm('¿Estás seguro de que deseas cerrar el turno? Esto borrará todos los tickets actuales y el contador iniciará en 1 para el próximo turno.');
-            
+
             if (!confirmClose) {
                 // Revertir el toggle si cancela
                 e.target.checked = false;
                 return;
             }
-            
+
             // Si confirma, borrar todos los tickets
             tickets = [];
             saveState();
@@ -260,12 +259,12 @@ function setupEventListeners() {
 
         if (isCerrado) {
             abiertoView.classList.remove('active');
-            if(dashboardView) dashboardView.classList.remove('active');
+            if (dashboardView) dashboardView.classList.remove('active');
             cerradoView.classList.add('active');
             renderAdminMenu();
         } else {
             cerradoView.classList.remove('active');
-            if(dashboardView) dashboardView.classList.remove('active');
+            if (dashboardView) dashboardView.classList.remove('active');
             abiertoView.classList.add('active');
             renderClientMenu();
             clearCart();
@@ -388,7 +387,7 @@ function setupEventListeners() {
             e.preventDefault();
             const user = loginUser.value.trim();
             const pass = loginPassword.value.trim();
-            
+
             if (user.toLowerCase() === 'admin' && pass === '12345') {
                 loginError.style.display = 'none';
                 loginSuccess('admin');
@@ -411,7 +410,7 @@ function setupEventListeners() {
     });
     confirmOptionsBtn.addEventListener('click', () => {
         if (!currentProductForOptions) return;
-        
+
         const selects = optionsList.querySelectorAll('.option-select');
         const options = [];
         selects.forEach(sel => {
@@ -420,7 +419,7 @@ function setupEventListeners() {
                 options.push({ name: sel.dataset.ingredient, value: val });
             }
         });
-        
+
         addToCartWithOptions(currentProductForOptions, options);
         optionsModal.classList.remove('show');
         currentProductForOptions = null;
@@ -446,7 +445,7 @@ function logout() {
     if (adminControls) adminControls.style.display = 'none';
     if (adminDropdownMenu) adminDropdownMenu.classList.remove('show');
     if (openLoginBtn) openLoginBtn.style.display = 'block';
-    
+
     // Default to client view
     isCerrado = false;
     if (modeToggle) modeToggle.checked = false;
@@ -455,7 +454,7 @@ function logout() {
     if (abiertoView) abiertoView.classList.add('active');
     renderClientMenu();
     clearCart();
-    
+
     if (loginForm) loginForm.reset();
 }
 
@@ -523,7 +522,7 @@ function generateCartKey(productId, options) {
 function addToCart(productId) {
     const product = menu.find(p => p.id === productId);
     if (!product) return;
-    
+
     if (isPreparedFood(product.name)) {
         currentProductForOptions = product;
         openOptionsModal(product);
@@ -536,7 +535,7 @@ function openOptionsModal(product) {
     optionsModalProductName.textContent = capitalizeFirstLetter(product.name);
     const ingredients = ['Jitomate', 'Queso Oaxaca', 'Lechuga', 'Crema', 'Salsa'];
     optionsList.innerHTML = '';
-    
+
     ingredients.forEach(ing => {
         const item = document.createElement('div');
         item.className = 'option-item';
@@ -550,7 +549,7 @@ function openOptionsModal(product) {
         `;
         optionsList.appendChild(item);
     });
-    
+
     optionsModal.classList.add('show');
 }
 
@@ -648,7 +647,7 @@ function executeReservation(paymentMethod) {
     let total = 0;
     const itemsList = Object.values(cart).map(item => {
         total += item.price * item.qty;
-        
+
         let optsText = '';
         if (item.options && item.options.length > 0) {
             optsText = ' (' + item.options.map(o => `${o.value} ${o.name}`).join(', ') + ')';
@@ -693,7 +692,7 @@ function showTicketModal(ticket) {
     document.getElementById('ticketNumberDisplay').textContent = ticket.number;
     document.getElementById('ticketCustomerName').textContent = ticket.customer;
     document.getElementById('ticketTotalDisplay').textContent = `$${ticket.total.toFixed(2)}`;
-    
+
     const ticketPaymentMethodDisplay = document.getElementById('ticketPaymentMethodDisplay');
     if (ticketPaymentMethodDisplay) {
         ticketPaymentMethodDisplay.textContent = ticket.paymentMethod || 'Efectivo';
@@ -898,7 +897,7 @@ window.reprintTicket = function (ticket) {
 };
 
 // Dashboard Logic
-window.updateTicketStatus = function(number, status) {
+window.updateTicketStatus = function (number, status) {
     if (useFirebase && db) {
         db.ref('tickets/ticket_' + number).update({ status: status }).catch(err => {
             console.error("Error updating ticket status in Firebase:", err);
@@ -923,7 +922,7 @@ window.updateTicketStatus = function(number, status) {
 
 function renderDashboard() {
     if (!colEsperando || !colPreparacion || !colListos || !colEntregados) return;
-    
+
     colEsperando.innerHTML = '';
     colPreparacion.innerHTML = '';
     colListos.innerHTML = '';
@@ -950,7 +949,7 @@ function renderDashboard() {
 function createDashboardCard(ticket) {
     const card = document.createElement('div');
     card.style.cssText = 'background: white; border-radius: var(--radius-md); padding: 1rem; box-shadow: var(--shadow-sm);';
-    
+
     if (ticket.status === 'esperando' || !ticket.status) card.style.borderLeft = '5px solid #d94f04';
     else if (ticket.status === 'preparacion' || ticket.status === 'pendiente') card.style.borderLeft = '5px solid orange';
     else if (ticket.status === 'listo') card.style.borderLeft = '5px solid var(--accent-color)';
